@@ -543,9 +543,7 @@ async function main() {
 }
 
 // Run the script
-if (require.main === module) {
-  main().catch((error) => {
-    console.error(`❌ Unhandled error: ${error.message}`);
-    process.exit(1);
-  });
-}
+main().catch((error) => {
+  console.error(`❌ Unhandled error: ${error.message}`);
+  process.exit(1);
+});
