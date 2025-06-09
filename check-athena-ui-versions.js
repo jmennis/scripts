@@ -532,7 +532,116 @@ async function main() {
         )
       );
 
-      console.log(`\n💾 Results saved to ${outputFile}`);
+      // Generate HTML report
+      const htmlFile = 'athena-ui-versions.html';
+      const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Athena UI Versions Report</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; background: #f9f9f9; color: #222; }
+    h1, h2, h3 { color: #2c3e50; }
+    .summary, .distribution { margin-bottom: 2rem; }
+    table { border-collapse: collapse; width: 100%; background: #fff; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f4f4f4; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    .ok { color: #27ae60; font-weight: bold; }
+    .warn { color: #f39c12; font-weight: bold; }
+    .fail { color: #c0392b; font-weight: bold; }
+    .version-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.95em; }
+    .version-green { background: #eafaf1; color: #27ae60; }
+    .version-yellow { background: #fffbe6; color: #f39c12; }
+    .version-red { background: #fdecea; color: #c0392b; }
+  </style>
+</head>
+<body>
+  <h1>Athena UI Versions Report</h1>
+  <div class="summary">
+    <h2>Summary</h2>
+    <ul>
+      <li><strong>Total repositories:</strong> ${repos.length}</li>
+      <li><strong>Repositories with athena-ui:</strong> ${results.length}</li>
+      <li><strong>Repositories without athena-ui:</strong> ${repos.length - results.length}</li>
+      <li><strong>Repos with athena-ui version &lt; 31:</strong> ${lessThan31}</li>
+      <li><strong>Repos with athena-ui version &gt;= 31:</strong> ${greaterOrEqual31}</li>
+    </ul>
+  </div>
+  <div class="distribution">
+    <h2>Version Distribution</h2>
+    <table>
+      <thead><tr><th>Version</th><th>Count</th></tr></thead>
+      <tbody>
+        ${Object.entries(versionCounts)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(
+            ([version, count]) =>
+              `<tr><td>${version}</td><td>${count}</td></tr>`
+          )
+          .join('')}
+      </tbody>
+    </table>
+  </div>
+  <div class="repos">
+    <h2>Repositories with athena-ui</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Version</th>
+          <th>URL</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${results
+          .map((repo) => {
+            const match = repo.version.match(/\d+/);
+            const major = match ? parseInt(match[0], 10) : 0;
+            let badgeClass = 'version-red';
+            if (major >= 31) badgeClass = 'version-green';
+            else if (major > 0) badgeClass = 'version-yellow';
+            return `<tr>
+              <td>${repo.name}</td>
+              <td><span class="version-badge ${badgeClass}">${repo.version}</span></td>
+              <td><a href="${repo.url}" target="_blank">${repo.url}</a></td>
+            </tr>`;
+          })
+          .join('')}
+      </tbody>
+    </table>
+  </div>
+  <div class="repos-no-athena">
+    <h2>Repositories without athena-ui</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>URL</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${repos
+          .filter((repo) => !results.find((r) => r.name === repo.name))
+          .map(
+            (repo) =>
+              `<tr>
+              <td>${repo.name}</td>
+              <td><a href="${repo.html_url}" target="_blank">${repo.html_url}</a></td>
+            </tr>`
+          )
+          .join('')}
+      </tbody>
+    </table>
+  </div>
+  <footer style="margin-top:2rem;font-size:0.9em;color:#888;">
+    Generated at ${new Date().toLocaleString()}
+  </footer>
+</body>
+</html>`;
+      fs.writeFileSync(htmlFile, html);
+      console.log(`\n💾 HTML report saved to ${htmlFile}`);
     } else {
       console.log('No repositories found with athena-ui dependency.');
     }
