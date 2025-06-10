@@ -501,10 +501,32 @@ async function main() {
       // Add summary for < 31 and >= 31
       let lessThan31 = 0;
       let greaterOrEqual31 = 0;
+      let totalArchived = 0;
+      let athenaArchived = 0;
+      let lessThan31Archived = 0;
+      let greaterOrEqual31Archived = 0;
+
+      // Count archived repos
+      repos.forEach(repo => {
+        if (repo.archived) {
+          totalArchived++;
+        }
+      });
+
       results.forEach((repo) => {
         if (repo.version) {
           const match = repo.version.match(/\d+/);
           const major = match ? parseInt(match[0], 10) : 0;
+          
+          if (repo.archived) {
+            athenaArchived++;
+            if (major >= 31) {
+              greaterOrEqual31Archived++;
+            } else {
+              lessThan31Archived++;
+            }
+          }
+          
           if (major >= 31) {
             greaterOrEqual31++;
           } else {
@@ -512,9 +534,28 @@ async function main() {
           }
         }
       });
-      console.log(`\nSummary:`);
-      console.log(`Repos with athena-ui version < 31: ${lessThan31}`);
-      console.log(`Repos with athena-ui version >= 31: ${greaterOrEqual31}`);
+
+      console.log('\nRepository Statistics:');
+      console.log('=====================');
+      console.log(`Total repositories: ${repos.length}`);
+      console.log(`├─ Active: ${repos.length - totalArchived}`);
+      console.log(`└─ Archived: ${totalArchived}`);
+      
+      console.log(`\nRepositories with athena-ui: ${results.length}`);
+      console.log(`├─ Active: ${results.length - athenaArchived}`);
+      console.log(`└─ Archived: ${athenaArchived}`);
+      
+      console.log(`\nRepositories without athena-ui: ${repos.length - results.length}`);
+      console.log(`├─ Active: ${(repos.length - results.length) - (totalArchived - athenaArchived)}`);
+      console.log(`└─ Archived: ${totalArchived - athenaArchived}`);
+      
+      console.log('\nAthena UI Version Distribution (Active Repos):');
+      console.log(`├─ Version < 31: ${lessThan31 - lessThan31Archived}`);
+      console.log(`└─ Version >= 31: ${greaterOrEqual31 - greaterOrEqual31Archived}`);
+      
+      console.log('\nAthena UI Version Distribution (Archived Repos):');
+      console.log(`├─ Version < 31: ${lessThan31Archived}`);
+      console.log(`└─ Version >= 31: ${greaterOrEqual31Archived}`);
 
       // Save results to JSON file
       const outputFile = 'athena-ui-versions.json';
@@ -568,12 +609,38 @@ async function main() {
   <h1>Athena UI Versions Report</h1>
   <div class="summary">
     <h2>Summary</h2>
+    <h3>Repository Overview</h3>
     <ul>
-      <li><strong>Total repositories:</strong> ${repos.length}</li>
-      <li><strong>Repositories with athena-ui:</strong> ${results.length}</li>
-      <li><strong>Repositories without athena-ui:</strong> ${repos.length - results.length}</li>
-      <li><strong>Repos with athena-ui version &lt; 31:</strong> ${lessThan31}</li>
-      <li><strong>Repos with athena-ui version &gt;= 31:</strong> ${greaterOrEqual31}</li>
+      <li><strong>Total repositories:</strong> ${repos.length}
+        <ul>
+          <li>Active: ${repos.length - totalArchived}</li>
+          <li>Archived: ${totalArchived}</li>
+        </ul>
+      </li>
+      <li><strong>Repositories with athena-ui:</strong> ${results.length}
+        <ul>
+          <li>Active: ${results.length - athenaArchived}</li>
+          <li>Archived: ${athenaArchived}</li>
+        </ul>
+      </li>
+      <li><strong>Repositories without athena-ui:</strong> ${repos.length - results.length}
+        <ul>
+          <li>Active: ${(repos.length - results.length) - (totalArchived - athenaArchived)}</li>
+          <li>Archived: ${totalArchived - athenaArchived}</li>
+        </ul>
+      </li>
+    </ul>
+    
+    <h3>Athena UI Version Distribution</h3>
+    <h4>Active Repositories:</h4>
+    <ul>
+      <li>Version < 31: ${lessThan31 - lessThan31Archived}</li>
+      <li>Version >= 31: ${greaterOrEqual31 - greaterOrEqual31Archived}</li>
+    </ul>
+    <h4>Archived Repositories:</h4>
+    <ul>
+      <li>Version < 31: ${lessThan31Archived}</li>
+      <li>Version >= 31: ${greaterOrEqual31Archived}</li>
     </ul>
   </div>
   <div class="distribution">
