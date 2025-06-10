@@ -1,5 +1,16 @@
 #!/usr/bin/env node
 
+/*
+Create a Classic Personal Access token
+you need GITHUB_READ_ALL_TOKEN env var with "read repos" and "read:packages"
+add: export GITHUB_READ_ALL_TOKEN=<your token> to ~/.zshrc
+
+
+To Run:
+curl -O https://raw.githubusercontent.com/jmennis/scripts/refs/heads/main/check-athena-ui-versions.js
+node check-athena-ui-versions.js 
+
+*/
 const https = require('https');
 const fs = require('fs');
 
