@@ -432,8 +432,9 @@ async function main() {
             }
           }
           const versionInfo = version ? ` (${version})` : '';
+          const archivedInfo = repo.archived ? ' [ARCHIVED]' : '';
           console.log(
-            `${colorStart}${indicator} ${repo.html_url}${versionInfo}${colorEnd}`
+            `${colorStart}${indicator} ${repo.html_url}${versionInfo}${archivedInfo}${colorEnd}`
           );
 
           if (version) {
@@ -441,6 +442,7 @@ async function main() {
               name: repoName,
               version,
               url: repo.html_url,
+              archived: repo.archived
             });
 
             versionCounts[version] = (versionCounts[version] || 0) + 1;
@@ -483,7 +485,8 @@ async function main() {
       });
 
       results.forEach((repo) => {
-        console.log(`• ${repo.name}: ${repo.version}`);
+        const archivedInfo = repo.archived ? ' [ARCHIVED]' : '';
+        console.log(`• ${repo.name}: ${repo.version}${archivedInfo}`);
         console.log(`  ${repo.url}`);
       });
 
@@ -555,6 +558,10 @@ async function main() {
     .version-green { background: #eafaf1; color: #27ae60; }
     .version-yellow { background: #fffbe6; color: #f39c12; }
     .version-red { background: #fdecea; color: #c0392b; }
+    .archived-badge { background: #e0e0e0; color: #666; padding: 2px 8px; border-radius: 4px; font-size: 0.9em; margin-left: 8px; }
+    details { margin: 1rem 0; }
+    summary { cursor: pointer; padding: 8px; background: #f4f4f4; border-radius: 4px; }
+    summary:hover { background: #e8e8e8; }
   </style>
 </head>
 <body>
@@ -602,8 +609,9 @@ async function main() {
             let badgeClass = 'version-red';
             if (major >= 31) badgeClass = 'version-green';
             else if (major > 0) badgeClass = 'version-yellow';
+            const archivedBadge = repo.archived ? '<span class="archived-badge">Archived</span>' : '';
             return `<tr>
-              <td>${repo.name}</td>
+              <td>${repo.name}${archivedBadge}</td>
               <td><span class="version-badge ${badgeClass}">${repo.version}</span></td>
               <td><a href="${repo.url}" target="_blank">${repo.url}</a></td>
             </tr>`;
@@ -614,26 +622,31 @@ async function main() {
   </div>
   <div class="repos-no-athena">
     <h2>Repositories without athena-ui</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>URL</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${repos
-          .filter((repo) => !results.find((r) => r.name === repo.name))
-          .map(
-            (repo) =>
-              `<tr>
-              <td>${repo.name}</td>
-              <td><a href="${repo.html_url}" target="_blank">${repo.html_url}</a></td>
-            </tr>`
-          )
-          .join('')}
-      </tbody>
-    </table>
+    <details>
+      <summary>Click to show/hide ${repos.length - results.length} repositories</summary>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>URL</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${repos
+            .filter((repo) => !results.find((r) => r.name === repo.name))
+            .map(
+              (repo) => {
+                const archivedBadge = repo.archived ? '<span class="archived-badge">Archived</span>' : '';
+                return `<tr>
+                <td>${repo.name}${archivedBadge}</td>
+                <td><a href="${repo.html_url}" target="_blank">${repo.html_url}</a></td>
+              </tr>`;
+              }
+            )
+            .join('')}
+        </tbody>
+      </table>
+    </details>
   </div>
   <footer style="margin-top:2rem;font-size:0.9em;color:#888;">
     Generated at ${new Date().toLocaleString()}
