@@ -4,8 +4,37 @@ const path = require('path');
 const { exec } = require('child_process');
 
 // --- Inlined from report-generator.js ---
+function getRepositoryUrl() {
+  return new Promise((resolve) => {
+    exec('git remote get-url origin', (error, stdout) => {
+      if (error) {
+        resolve(null);
+        return;
+      }
+
+      const remoteUrl = stdout.trim();
+      // Convert SSH URL to HTTPS if needed
+      let httpsUrl = remoteUrl;
+      if (remoteUrl.startsWith('git@')) {
+        httpsUrl = remoteUrl
+          .replace('git@github.com:', 'https://github.com/')
+          .replace('git@gitlab.com:', 'https://gitlab.com/')
+          .replace('git@bitbucket.org:', 'https://bitbucket.org/')
+          .replace('.git', '');
+      } else if (remoteUrl.startsWith('ssh://')) {
+        httpsUrl = remoteUrl
+          .replace('ssh://git@', 'https://')
+          .replace('.git', '');
+      }
+
+      resolve(httpsUrl);
+    });
+  });
+}
+
 function generateReport(results) {
-  const reportContent = `
+  getRepositoryUrl().then((repoUrl) => {
+    const reportContent = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -24,6 +53,21 @@ function generateReport(results) {
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .repo-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007bff;
+        }
+        .repo-url {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .repo-url:hover {
+            text-decoration: underline;
         }
         h1 {
             color: #2c3e50;
@@ -249,6 +293,12 @@ function generateReport(results) {
 </head>
 <body>
     <div class="container">
+        <div class="repo-info">
+            <h2>Repository URL</h2>
+            <p>
+                <a href="${repoUrl}" class="repo-url">${repoUrl}</a>
+            </p>
+        </div>
         <h1>Codebase Guidelines Analysis</h1>
         
         <div class="summary">
@@ -316,6 +366,7 @@ function generateReport(results) {
                       suggestion =
                         'Use CSS variables or a theme system to maintain consistent colors across the application.';
                     }
+
                     return `
                         <li class="failed">
                             <button class="item-collapsible" onclick="toggleSection(this)">
@@ -420,6 +471,7 @@ function generateReport(results) {
                             'Refactor styles to use proper cascading',
                           ];
                         }
+
                         return `
                             <li class="warning impact-${priority}">
                                 <button class="item-collapsible" onclick="toggleSection(this)">
@@ -483,31 +535,33 @@ function generateReport(results) {
 </body>
 </html>
 `;
-  try {
-    const reportPath = 'guidelines-report.html';
-    // Write report
-    fs.writeFileSync(reportPath, reportContent);
-    // console.log('Report file written successfully to guidelines-report.html');
-    // Open report in default browser
-    const openCommand =
-      process.platform === 'darwin'
-        ? 'open'
-        : process.platform === 'win32'
-          ? 'start'
-          : 'xdg-open';
-    exec(`${openCommand} ${reportPath}`, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error opening report: ${error.message}`);
-        return;
-      }
-      if (stderr) {
-        console.error(`Stderr on opening report: ${stderr}`);
-      }
-      // console.log('Report opened in default browser.');
-    });
-  } catch (error) {
-    console.error(`Error generating report: ${error.message}`);
-  }
+    try {
+      const reportPath = 'guidelines-report.html';
+      // Write report
+      fs.writeFileSync(reportPath, reportContent);
+      // console.log('Report file written successfully to guidelines-report.html');
+      // Open report in default browser
+      const openCommand =
+        process.platform === 'darwin'
+          ? 'open'
+          : process.platform === 'win32'
+            ? 'start'
+            : 'xdg-open';
+      exec(`${openCommand} ${reportPath}`, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`Error opening report: ${error.message}`);
+
+          return;
+        }
+        if (stderr) {
+          console.error(`Stderr on opening report: ${stderr}`);
+        }
+        // console.log('Report opened in default browser.');
+      });
+    } catch (error) {
+      console.error(`Error generating report: ${error.message}`);
+    }
+  });
 }
 
 // --- Original content from index.js ---
